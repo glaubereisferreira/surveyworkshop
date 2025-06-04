@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Claro Workshop{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h2>🔧 Painel Administrativo</h2>
+    
+    <div class="admin-stats">
+        {% for qid, question in questions.items() %}
+            <div class="admin-question">
+                <h3>Pergunta {{ qid }}: {{ question.title }}</h3>
+                
+                <div class="admin-results">
+                    {% for i, option in enumerate(question.options) %}
+                        <div class="admin-option">
+                            <span class="option-name">{{ option }}</span>
+                            <span class="vote-count">{{ question.votes[i] }} votos</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="admin-actions">
+                    <a href="{{ url_for('results', qid=qid) }}" class="btn btn-view" target="_blank">
+                        Ver Gráfico
+                    </a>
+                    <a href="{{ url_for('reset_question', qid=qid) }}" class="btn btn-reset"
+                       onclick="return confirm('Resetar todos os votos da pergunta {{ qid }}?')">
+                        Reset Votos
+                    </a>
+                </div>
+                
+                <div class="admin-total">
+                    Total: {{ question.votes | sum }} votos
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <div class="admin-links">
+        <h3>🔗 Links para PowerPoint</h3>
+        <div class="links-container">
+            {% for qid in questions.keys() %}
+                <div class="link-item">
+                    <label>Resultados Pergunta {{ qid }}:</label>
+                    <input type="text" value="{{request.url_root}}results/{{ qid }}" readonly onclick="this.select()">
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

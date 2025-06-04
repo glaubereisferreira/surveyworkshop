@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Resultados - Pergunta {{ qid }}{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <div class="results-header">
+        <span class="question-number">Resultados - Pergunta {{ qid }}</span>
+        <h2 class="question-title">{{ q.title }}</h2>
+    </div>
+    
+    <div class="chart-container">
+        <canvas id="votingChart" width="800" height="400"></canvas>
+    </div>
+    
+    <div class="live-indicator">
+        <span class="pulse-dot"></span>
+        <span>Atualizando em tempo real</span>
+    </div>
+    
+    <div class="results-summary" id="resultsSummary">
+        <!-- Será preenchido pelo JavaScript -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='main.js') }}"></script>
+<script>
+    // Dados iniciais da pergunta
+    const questionData = {
+        qid: {{ qid }},
+        title: "{{ q.title }}",
+        labels: {{ q.options | tojson }},
+        votes: {{ q.votes | tojson }}
+    };
+    
+    // Inicializar gráfico
+    initChart(questionData);
+</script>
+{% endblock %}

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ question.title }} - Apresentação</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            width: 95%;
+            height: 95%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .title-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .question-title {
+            font-size: 3.5rem;
+            color: #333;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .pulse-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #FF6B35;
+            margin-right: 15px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .chart-section {
+            flex: 1;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        #votingChart {
+            max-height: 70vh !important;
+            max-width: 100% !important;
+        }
+        
+        .stats-section {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 107, 53, 0.9);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .vote-count {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #FFE135;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .question-title { font-size: 2.5rem; }
+            .live-indicator { font-size: 1.4rem; }
+            .stats-section { font-size: 1.2rem; }
+            .vote-count { font-size: 2rem; }
+        }
+        
+        @media (max-width: 768px) {
+            .question-title { font-size: 2rem; }
+            .presentation-container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="title-section">
+            <h1 class="question-title">{{ question.title }}</h1>
+            <div class="live-indicator">
+                <span class="pulse-dot"></span>
+                <span>📊 Resultados em Tempo Real</span>
+            </div>
+        </div>
+        
+        <div class="chart-section">
+            <canvas id="votingChart"></canvas>
+            <div class="stats-section">
+                <div>Total de Votos:</div>
+                <div class="vote-count" id="totalVotes">{{ total_votes }}</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Socket.IO
+        const socket = io();
+        let chart;
+        
+        // Dados iniciais da pergunta
+        const questionData = {
+            qid: {{ qid }},
+            title: "{{ question.title }}",
+            labels: {{ question.options | tojson }},
+            votes: {{ question.votes | tojson }}
+        };
+        
+        // Configuração do Chart.js para apresentação
+        const chartConfig = {
+            type: 'bar',
+            data: {
+                labels: questionData.labels,
+                datasets: [{
+                    label: 'Votos',
+                    data: questionData.votes,
+                    backgroundColor: [
+                        'rgba(255, 107, 53, 0.8)',   // Laranja Claro
+                        'rgba(247, 147, 30, 0.8)',   // Laranja escuro
+                        'rgba(255, 225, 53, 0.8)',   // Amarelo
+                        'rgba(46, 204, 113, 0.8)',   // Verde
+                        'rgba(52, 152, 219, 0.8)'    // Azul
+                    ],
+                    borderColor: [
+                        'rgba(255, 107, 53, 1)',
+                        'rgba(247, 147, 30, 1)',
+                        'rgba(255, 225, 53, 1)',
+                        'rgba(46, 204, 113, 1)',
+                        'rgba(52, 152, 219, 1)'
+                    ],
+                    borderWidth: 3,
+                    borderRadius: 10,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: 20
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        titleFont: { size: 16 },
+                        bodyFont: { size: 14 },
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        cornerRadius: 10,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            font: { size: 16, weight: 'bold' },
+                            color: '#333'
+                        },
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)',
+                            lineWidth: 2
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: { size: 16, weight: 'bold' },
+                            color: '#333',
+                            maxRotation: 45
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        };
+        
+        // Inicializar gráfico
+        function initChart() {
+            const ctx = document.getElementById('votingChart').getContext('2d');
+            chart = new Chart(ctx, chartConfig);
+            updateTotalVotes();
+        }
+        
+        // Atualizar total de votos
+        function updateTotalVotes() {
+            const total = questionData.votes.reduce((sum, votes) => sum + votes, 0);
+            document.getElementById('totalVotes').textContent = total;
+        }
+        
+        // Socket.IO - Receber atualizações em tempo real
+        socket.on('update', function(data) {
+            if (data.qid === questionData.qid) {
+                questionData.votes = data.votes;
+                
+                // Atualizar gráfico com animação
+                chart.data.datasets[0].data = data.votes;
+                chart.update('active');
+                
+                // Atualizar contador
+                updateTotalVotes();
+                
+                console.log('📊 Gráfico atualizado:', data);
+            }
+        });
+        
+        // Conectar ao Socket.IO
+        socket.on('connect', function() {
+            console.log('🔗 Conectado ao servidor Socket.IO');
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('❌ Desconectado do servidor Socket.IO');
+        });
+        
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', initChart);
+    </script>
+</body>
+</html>

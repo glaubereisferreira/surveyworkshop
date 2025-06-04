@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Pergunta {{ qid }} - Claro Workshop{% endblock %}
+
+{% block content %}
+<div class="vote-container">
+    <div class="question-header">
+        <span class="question-number">Pergunta {{ qid }} de 3</span>
+        <h2 class="question-title">{{ q.title }}</h2>
+    </div>
+    
+    {% if voted %}
+        <div class="thank-you-message">
+            <div class="success-icon">✅</div>
+            <h3>Obrigado pelo seu voto!</h3>
+            <p>Seu voto foi registrado com sucesso.</p>
+            <div class="vote-stats">
+                <span class="total-votes">Total de votos: {{ total_votes }}</span>
+            </div>
+            
+            <div class="next-actions">
+                {% if qid < 3 %}
+                    <a href="{{ url_for('vote_question', qid=qid+1) }}" class="btn btn-next">
+                        Próxima Pergunta →
+                    </a>
+                {% else %}
+                    <p class="final-message">🎉 Todas as perguntas foram respondidas!</p>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <form method="post" action="{{ url_for('submit') }}" class="vote-form">
+            <input type="hidden" name="qid" value="{{ qid }}">
+            
+            <div class="options-container">
+                {% for option in q.options %}
+                    <label class="option-label">
+                        <input type="radio" name="choice" value="{{ loop.index0 }}" required>
+                        <span class="option-text">{{ option }}</span>
+                        <span class="option-indicator"></span>
+                    </label>
+                {% endfor %}
+            </div>
+            
+            <button type="submit" class="btn btn-submit">
+                📤 Enviar Voto
+            </button>
+        </form>
+        
+        <div class="vote-info">
+            <p>📱 Voto anônimo • ⚡ Resultado em tempo real</p>
+            {% if total_votes > 0 %}
+                <p class="current-votes">{{ total_votes }} pessoa(s) já votaram</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
